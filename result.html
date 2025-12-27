@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>レース結果 表示</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <div class="max-w-6xl mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-2">レース結果 SPA</h1>
+
+    <!-- 開催切り替え -->
+    <div class="mb-4">
+      <label class="text-sm text-gray-600 mr-2">開催：</label>
+      <select id="daySelect" class="border rounded px-2 py-1"></select>
+    </div>
+
+    <div id="meta" class="text-sm text-gray-600 mb-4"></div>
+
+    <!-- レース切り替え -->
+    <div id="raceTabs" class="flex flex-wrap gap-2 mb-4"></div>
+
+    <!-- レース詳細 -->
+    <div id="raceDetail" class="bg-white rounded-xl shadow p-4"></div>
+  </div>
+
+  <script>
+    // ================================
+    // データ保持
+    // ================================
+    const data = {
+      days: [],        // JSON最外層（開催ごと）
+      currentDay: 0,   // 選択中の開催index
+      races: []        // 選択中開催のレース配列
+    };
+
+    const meta = document.getElementById('meta');
+    const raceTabs = document.getElementById('raceTabs');
+    const raceDetail = document.getElementById('raceDetail');
+    const daySelect = document.getElementById('daySelect');
+
+    // ================================
+    // 外部JSON読み込み
+    // ================================
+    async function loadData() {
+      const res = await fetch('./race_result_20251227.json');
+      data.days = await res.json();
+
+      renderDaySelect();
+      selectDay(0);
+    }
+
+    // ================================
+    // 開催セレクト描画
+    // ================================
+    function renderDaySelect() {
+      daySelect.innerHTML = '';
+
+      data.days.forEach((day, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = `${day.place} / ${day.grade} / ${day.race_day}日目`;
+        daySelect.appendChild(opt);
+      });
+
+      daySelect.onchange = e => {
+        selectDay(Number(e.target.value));
+      };
+    }
+
+    // ================================
+    // 開催切り替え
+    // ================================
+    function selectDay(index) {
+      data.currentDay = index;
+      const day = data.days[index];
+
+      data.races = day.races;
+
+      meta.textContent = `${day.place} / ${day.grade} / ${day.race_day}日目 / レースID: ${day.race_id}`;
+
+      renderRaceTabs();
+      if (data.races.length > 0) showRace(0);
+    }
+
+    // ================================
+    // レースタブ描画
+    // ================================
+    function renderRaceTabs() {
+      raceTabs.innerHTML = '';
+
+      data.races.forEach((race, idx) => {
+        const btn = document.createElement('button');
+        btn.textContent = `${race.race_num}R`;
+        btn.className = 'px-3 py-1 rounded-lg border bg-white hover:bg-gray-100';
+        btn.onclick = () => showRace(idx);
+        raceTabs.appendChild(btn);
+      });
+    }
+
+    // ================================
+    // レース表示
+    // ================================
+    function showRace(index) {
+      const race = data.races[index];
+      if (!race) return;
+
+      raceDetail.innerHTML = `
+        <h2 class="text-xl font-semibold mb-2">${race.race_num}R：${race.race_name}</h2>
+
+        ${race.video_url ? `
+          <video src="${race.video_url}" controls class="w-full max-w-2xl mb-4"></video>
+        ` : ''}
+
+        <table class="w-full text-sm border">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="border px-2">着</th>
+              <th class="border px-2">車</th>
+              <th class="border px-2">選手</th>
+              <th class="border px-2">府県</th>
+              <th class="border px-2">級班</th>
+              <th class="border px-2">上り</th>
+              <th class="border px-2">決</th>
+              <th class="border px-2">SB</th>
+              <th class="border px-2">着差</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${race.racers.map(r => `
+              <tr class="text-center">
+                <td class="border">${r['着']}</td>
+                <td class="border">${r['車']}</td>
+                <td class="border">${r['選手名']}</td>
+                <td class="border">${r['府県']}</td>
+                <td class="border">${r['級班']}</td>
+                <td class="border">${r['上り']}</td>
+                <td class="border">${r['決']}</td>
+                <td class="border">${r['SB']}</td>
+                <td class="border">${r['着差']}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
