@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>レース結果 SPA</title>
+  <title>レース結果</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
   <div class="max-w-6xl mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-2">レース結果 SPA</h1>
+    <h1 class="text-2xl font-bold mb-2">レース結果</h1>
 
     <!-- 日付選択 -->
     <div class="mb-4 flex items-center gap-2">
@@ -157,11 +157,14 @@
       `;
     }
 
-    // 初期日付：今日
-    const today = new Date().toISOString().slice(0, 10);
-    dateInput.value = today;
+    // 初期日付：昨日（日本時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const yesterdayJST = new Date(nowJST.getTime() - 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
-    loadData(today);
+    dateInput.value = yesterdayJST;
+    loadData(yesterdayJST);
 
     dateInput.addEventListener('change', e => {
       loadData(e.target.value);
