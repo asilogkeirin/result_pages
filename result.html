@@ -111,11 +111,32 @@
     }
 
     // ================================
+    // 評価保存・取得（localStorage）
+    // ================================
+    function storageKey(day, raceNum, racerName) {
+      // race_id + race_day + race_num + 選手名で一意にする
+      return `eval:${day.race_id}:${day.race_day}:${raceNum}:${racerName}`;
+    }
+
+    function saveEvaluation(day, raceNum, racerName, value, comment) {
+      const key = storageKey(day, raceNum, racerName);
+      localStorage.setItem(key, JSON.stringify({ value, comment }));
+    }
+
+    function loadEvaluation(day, raceNum, racerName) {
+      const key = storageKey(day, raceNum, racerName);
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : { value: '', comment: '' };
+    }
+
+    // ================================
     // レース表示
     // ================================
     function showRace(index) {
       const race = data.races[index];
       if (!race) return;
+
+      const day = data.days[data.currentDay];
 
       raceDetail.innerHTML = `
         <h2 class="text-xl font-semibold mb-2">${race.race_num}R：${race.race_name}</h2>
@@ -130,38 +151,64 @@
               <th class="border px-2">着</th>
               <th class="border px-2">車</th>
               <th class="border px-2">選手</th>
-              <th class="border px-2">府県</th>
               <th class="border px-2">級班</th>
               <th class="border px-2">上り</th>
               <th class="border px-2">決</th>
               <th class="border px-2">SB</th>
               <th class="border px-2">着差</th>
+              <th class="border px-2">評価</th>
+              <th class="border px-2">コメント</th>
             </tr>
           </thead>
           <tbody>
-            ${race.racers.map(r => `
+            ${race.racers.map(r => {
+              const ev = loadEvaluation(day, race.race_num, r['選手名']);
+              return `
               <tr class="text-center">
                 <td class="border">${r['着']}</td>
                 <td class="border">${r['車']}</td>
                 <td class="border">${r['選手名']}</td>
-                <td class="border">${r['府県']}</td>
                 <td class="border">${r['級班']}</td>
                 <td class="border">${r['上り']}</td>
                 <td class="border">${r['決']}</td>
                 <td class="border">${r['SB']}</td>
                 <td class="border">${r['着差']}</td>
-              </tr>
-            `).join('')}
+                <td class="border">
+                  <select class="border rounded px-1 text-sm eval-select" data-racer="${r['選手名']}" data-race="${race.race_num}">
+                    <option value="">-</option>
+                    <option value="A" ${ev.value==='A'?'selected':''}>A</option>
+                    <option value="B" ${ev.value==='B'?'selected':''}>B</option>
+                    <option value="C" ${ev.value==='C'?'selected':''}>C</option>
+                    <option value="D" ${ev.value==='D'?'selected':''}>D</option>
+                  </select>
+                </td>
+                <td class="border">
+                  <input type="text" class="w-full border rounded px-1 text-sm eval-comment" data-racer="${r['選手名']}" data-race="${race.race_num}" value="${ev.comment}" />
+                </td>
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>
       `;
+
+      // 保存イベント
+      raceDetail.querySelectorAll('.eval-select, .eval-comment').forEach(el => {
+        el.addEventListener('change', () => {
+          const racer = el.dataset.racer;
+          const raceNum = el.dataset.race;
+          const row = el.closest('tr');
+          const value = row.querySelector('.eval-select').value;
+          const comment = row.querySelector('.eval-comment').value;
+          saveEvaluation(day, raceNum, racer, value, comment);
+        });
+      });
     }
 
     // 初期日付：昨日（日本時間）
     const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const yesterdayJST = new Date(nowJST.getTime() - 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+      .toISOString()
+      .slice(0, 10);
 
     dateInput.value = yesterdayJST;
     loadData(yesterdayJST);
