@@ -156,6 +156,7 @@
               <th class="border px-2">決</th>
               <th class="border px-2">SB</th>
               <th class="border px-2">着差</th>
+              <th class="border px-2">レース後コメント</th>
               <th class="border px-2">評価</th>
               <th class="border px-2">コメント</th>
             </tr>
@@ -173,6 +174,14 @@
                 <td class="border">${r['決']}</td>
                 <td class="border">${r['SB']}</td>
                 <td class="border">${r['着差']}</td>
+                <td class="border text-left px-2">
+                  ${(() => {
+                    const c = r['レース後コメント'] || '';
+                    const max = 20;
+                    const short = c.length > max ? c.slice(0, max) + '…' : c;
+                    return `<span title="${c.replace(/"/g, '&quot;')}">${short}</span>`;
+                  })()}
+                </td>
                 <td class="border">
                   <select class="border rounded px-1 text-sm eval-select" data-racer="${r['選手名']}" data-race="${race.race_num}">
                     <option value="">-</option>
