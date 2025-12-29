@@ -50,7 +50,7 @@
     async function loadData(dateStr) {
       const filename = `race_result_${dateStr.replace(/-/g, '')}.json`;
 
-      const res = await fetch(`./data/${filename}`);
+      const res = await fetch(`https://storage.googleapis.com/asilogkeirin/race_result/${filename}`);
       if (!res.ok) {
         alert(`データファイルが見つかりません: ${filename}`);
         return;
