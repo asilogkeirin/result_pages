@@ -44,6 +44,10 @@
     const daySelect = document.getElementById('daySelect');
     const dateInput = document.getElementById('dateInput');
 
+    // 表示中のレース状態
+    // { mode: 'single', index: number } or { mode: 'all' }
+    let activeView = { mode: 'single', index: 0 };
+
     // ================================
     // 外部JSON読み込み
     // ================================
@@ -90,7 +94,7 @@
       data.races = day.races;
 
       meta.textContent = `${day.place} / ${day.grade} / ${day.race_day}日目 / レースID: ${day.race_id}`;
-
+      activeView = { mode: 'single', index: 0 };
       renderRaceTabs();
       if (data.races.length > 0) showRace(0);
     }
@@ -101,13 +105,34 @@
     function renderRaceTabs() {
       raceTabs.innerHTML = '';
 
+      // 各レース
       data.races.forEach((race, idx) => {
         const btn = document.createElement('button');
         btn.textContent = `${race.race_num}R`;
-        btn.className = 'px-3 py-1 rounded-lg border bg-white hover:bg-gray-100';
+
+        const isActive =
+          activeView.mode === 'single' && activeView.index === idx;
+
+        btn.className = isActive
+          ? 'px-3 py-1 rounded-lg border bg-blue-600 text-white'
+          : 'px-3 py-1 rounded-lg border bg-white hover:bg-gray-100';
+
         btn.onclick = () => showRace(idx);
         raceTabs.appendChild(btn);
       });
+
+      // 全レース表示
+      const allBtn = document.createElement('button');
+      allBtn.textContent = '全レース表示';
+
+      const isAllActive = activeView.mode === 'all';
+
+      allBtn.className = isAllActive
+        ? 'px-3 py-1 rounded-lg border bg-blue-600 text-white ml-2'
+        : 'px-3 py-1 rounded-lg border bg-white hover:bg-gray-100 ml-2';
+
+      allBtn.onclick = showAllRaces;
+      raceTabs.appendChild(allBtn);
     }
 
     // ================================
@@ -133,6 +158,9 @@
     // レース表示
     // ================================
     function showRace(index) {
+      activeView = { mode: 'single', index };
+      renderRaceTabs();
+
       const race = data.races[index];
       if (!race) return;
 
@@ -215,18 +243,172 @@
       });
     }
 
-    // 初期日付：昨日（日本時間）
-    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
-    const yesterdayJST = new Date(nowJST.getTime() - 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10);
+    const now = new Date();
+    const baseDate = new Date(now);
 
-    dateInput.value = yesterdayJST;
-    loadData(yesterdayJST);
+    if (now.getHours() < 19) {
+      baseDate.setDate(baseDate.getDate() - 1);
+    }
+
+    dateInput.value = baseDate.toLocaleDateString('sv-SE');
+
+    loadData(baseDate.toLocaleDateString('sv-SE'));
 
     dateInput.addEventListener('change', e => {
       loadData(e.target.value);
     });
+
+    function showAllRaces() {
+      activeView = { mode: 'all' };
+      renderRaceTabs();
+
+      const day = data.days[data.currentDay];
+      if (!day) return;
+
+      raceDetail.innerHTML = `
+        <div class="mb-4">
+          <h2 class="text-xl font-semibold mb-2">
+            ${day.place} / ${day.grade} / ${day.race_day}日目（全レース）
+          </h2>
+
+          <div class="flex justify-end">
+            <button
+              id="copyAllBtn"
+              class="px-3 py-1 rounded-lg border bg-white hover:bg-gray-100 text-sm">
+              表をコピー
+            </button>
+          </div>
+        </div>
+
+        ${day.races.map(race => `
+          <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-2">
+              ${race.race_num}R：${race.race_name}
+            </h3>
+
+            <table class="w-full text-sm border mb-4">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="border px-2">着</th>
+                  <th class="border px-2">車</th>
+                  <th class="border px-2">選手</th>
+                  <th class="border px-2">級班</th>
+                  <th class="border px-2">上り</th>
+                  <th class="border px-2">決</th>
+                  <th class="border px-2">SB</th>
+                  <th class="border px-2">着差</th>
+                  <th class="border px-2">評価</th>
+                  <th class="border px-2">コメント</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${race.racers.map(r => {
+                  const ev = loadEvaluation(day, race.race_num, r['選手名']);
+                  return `
+                    <tr class="text-center">
+                      <td class="border">${r['着']}</td>
+                      <td class="border">${r['車']}</td>
+                      <td class="border">${r['選手名']}</td>
+                      <td class="border">${r['級班']}</td>
+                      <td class="border">${r['上り']}</td>
+                      <td class="border">${r['決']}</td>
+                      <td class="border">${r['SB']}</td>
+                      <td class="border">${r['着差']}</td>
+                      <td class="border">
+                        <select class="border rounded px-1 text-sm eval-select"
+                          data-racer="${r['選手名']}"
+                          data-race="${race.race_num}">
+                          <option value="">-</option>
+                          <option value="A" ${ev.value==='A'?'selected':''}>A</option>
+                          <option value="B+" ${ev.value==='B+'?'selected':''}>B+</option>
+                          <option value="B" ${ev.value==='B'?'selected':''}>B</option>
+                          <option value="B-" ${ev.value==='B-'?'selected':''}>B-</option>
+                          <option value="C" ${ev.value==='C'?'selected':''}>C</option>
+                          <option value="D" ${ev.value==='D'?'selected':''}>D</option>
+                        </select>
+                      </td>
+                      <td class="border">
+                        <input type="text"
+                          class="w-full border rounded px-1 text-sm eval-comment"
+                          data-racer="${r['選手名']}"
+                          data-race="${race.race_num}"
+                          value="${ev.comment}" />
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `).join('')}
+      `;
+
+      // 評価保存イベント（既存ロジックと同じ）
+      raceDetail.querySelectorAll('.eval-select, .eval-comment').forEach(el => {
+        el.addEventListener('change', () => {
+          const racer = el.dataset.racer;
+          const raceNum = el.dataset.race;
+          const row = el.closest('tr');
+          const value = row.querySelector('.eval-select').value;
+          const comment = row.querySelector('.eval-comment').value;
+          saveEvaluation(day, raceNum, racer, value, comment);
+        });
+      });
+
+      const copyBtn = document.getElementById('copyAllBtn');
+      copyBtn.onclick = async () => {
+        const tsv = buildAllRacesTSV(day);
+        await navigator.clipboard.writeText(tsv);
+        copyBtn.textContent = 'コピーしました';
+        setTimeout(() => (copyBtn.textContent = '表をコピー'), 1500);
+      };
+    }
+
+    function buildAllRacesTSV(day) {
+      const header = [
+        '開催',
+        'グレード',
+        '日目',
+        'レース',
+        '着',
+        '車',
+        '選手',
+        '級班',
+        '上り',
+        '決',
+        'SB',
+        '着差',
+        '評価',
+        'コメント'
+      ];
+
+      const lines = [header.join('\t')];
+
+      day.races.forEach(race => {
+        race.racers.forEach(r => {
+          const ev = loadEvaluation(day, race.race_num, r['選手名']);
+
+          lines.push([
+            day.place,
+            day.grade,
+            day.race_day,
+            race.race_num,
+            r['着'],
+            r['車'],
+            r['選手名'],
+            r['級班'],
+            r['上り'],
+            r['決'],
+            r['SB'],
+            r['着差'],
+            ev.value,
+            ev.comment
+          ].join('\t'));
+        });
+      });
+
+      return lines.join('\n');
+    }
   </script>
 </body>
 </html>
