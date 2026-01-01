@@ -49,6 +49,15 @@
     let activeView = { mode: 'single', index: 0 };
 
     // ================================
+    // 日付ユーティリティ
+    // ================================
+    function nextDate(dateStr) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + 1);
+      return d.toLocaleDateString('sv-SE');
+    }
+
+    // ================================
     // 外部JSON読み込み
     // ================================
     async function loadData(dateStr) {
@@ -265,11 +274,25 @@
       const day = data.days[data.currentDay];
       if (!day) return;
 
+      // ===== 決勝判定 =====
+      const hasFinalRace = day.races.some(r =>
+        r.race_name.includes('決勝') && !r.race_name.includes('準決勝')
+      );
+      const next = nextDate(currentDateStr);
+      const nextUrl = `race.html?date=${next}&place=${encodeURIComponent(day.place)}`;
+
       raceDetail.innerHTML = `
         <div class="mb-4">
-          <h2 class="text-xl font-semibold mb-2">
+          <h2 class="text-xl font-semibold">
             ${day.place} / ${day.grade} / ${day.race_day}日目（全レース）
           </h2>
+
+          ${hasFinalRace ? '' : `
+            <a href="${nextUrl}"
+               class="px-3 py-1 rounded-lg border bg-blue-600 text-white text-sm hover:bg-blue-700">
+              ▶ 次の日のレース
+            </a>
+          `}
 
           <div class="flex justify-end">
             <button
