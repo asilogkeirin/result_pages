@@ -278,7 +278,7 @@
       const hasFinalRace = day.races.some(r =>
         r.race_name.includes('決勝') && !r.race_name.includes('準決勝')
       );
-      const next = nextDate(currentDateStr);
+      const next = nextDate(dateInput.value);
       const nextUrl = `race.html?date=${next}&place=${encodeURIComponent(day.place)}`;
 
       raceDetail.innerHTML = `
