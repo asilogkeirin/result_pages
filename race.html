@@ -58,7 +58,7 @@
     }
 
     // YYYY-MM-DD 形式
-    const baseDateStr = baseDate.toISOString().slice(0, 10);
+    const baseDateStr = baseDate.toLocaleDateString('sv-SE');
 
     // GET パラメータがあればそれを優先
     dateInput.value = queryDate ?? baseDateStr;
