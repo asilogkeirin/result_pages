@@ -47,13 +47,10 @@
     // 日付初期化（GET優先 / JST 22時切り替え）
     // ================================
 
-    // JST の現在時刻を作る
-    const nowUTC = new Date();
-    const nowJST = new Date(nowUTC.getTime() + 9 * 60 * 60 * 1000);
+    const now = new Date();
 
-    // 基準日（22時以降なら翌日）
-    const baseDate = new Date(nowJST);
-    if (nowJST.getHours() >= 22) {
+    const baseDate = new Date(now);
+    if (now.getHours() >= 22) {
       baseDate.setDate(baseDate.getDate() + 1);
     }
 
