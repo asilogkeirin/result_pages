@@ -477,7 +477,7 @@
 
       const lines = [header.join('\t')];
 
-      day.races.forEach(race => {
+      day.races.forEach((race, raceIdx) => {
         race.racers.forEach(r => {
           const ev = loadEvaluation(day, r['選手名']);
 
