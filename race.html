@@ -117,20 +117,34 @@
     // ================================
     // 過去評価取得
     // ================================
-    function loadPastEvaluations(day, raceNum, racerName) {
-      const results = [];
+    function loadPastEvaluation(day, racerName) {
+      if (day.race_day <= 1) return '';
 
-      for (let d = 1; d < day.race_day; d++) {
-        const key = `eval:${day.race_id}:${d}:${raceNum}:${racerName}`;
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const ev = JSON.parse(raw);
-          if (ev.value) {
-            results.push(`${ev.value}`);
-          }
-        }
+      const key = `eval:${day.race_id}:${racerName}`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return '';
+
+      const ev = JSON.parse(raw);
+      return ev.value || '';
+    }
+
+    // ================================
+    // 前日コメント取得（単数）
+    // ================================
+    function loadPastComment(day, raceNum, racerName) {
+      const prevDay = day.race_day - 1;
+      if (prevDay < 1) return '';
+
+      const key = `eval:${day.race_id}:${racerName}`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return '';
+
+      try {
+        const data = JSON.parse(raw);
+        return data.comments?.[prevDay] ?? '';
+      } catch {
+        return '';
       }
-      return results.join('/');
     }
 
     // ================================
@@ -159,6 +173,10 @@
               <tr>
                 <th class="border px-1">車</th>
                 <th class="border px-1">選手</th>
+                ${target.race_day >= 2
+                  ? `<th class="border px-1">評価</th>`
+                  : ''
+                }
                 <th class="border px-1">競走<br>得点</th>
                 <th class="border px-1">脚</th>
                 <th class="border px-1">S</th>
@@ -170,11 +188,11 @@
                 <th class="border px-1">勝率</th>
                 <th class="border px-1">2連<br>対率</th>
                 <th class="border px-1">3連<br>対率</th>
+                <th class="border px-1">コメント</th>
                 ${target.race_day >= 2
-                  ? `<th class="border px-1">過去<br>評価</th>`
+                  ? `<th class="border px-1">脚ログ</th>`
                   : ''
                 }
-                <th class="border px-1">コメント</th>
               </tr>
             </thead>
             <tbody>
@@ -187,6 +205,12 @@
                       ${r.級班} ${r.年齢} ${r.期別} ${r.府県}
                     </div>
                   </td>
+                  ${target.race_day >= 2
+                    ? `<td class="border px-1 text-xs text-gray-700">
+                        ${loadPastEvaluation(target, r.選手名)}
+                      </td>`
+                    : ''
+                  }
                   <td class="border px-1 text-right">${r.競走得点}</td>
                   <td class="border px-1">${r.脚質}</td>
                   <td class="border px-1">${r.S}</td>
@@ -198,13 +222,13 @@
                   <td class="border px-1 text-right">${r.勝率}</td>
                   <td class="border px-1 text-right">${r["2連対率"]}</td>
                   <td class="border px-1 text-right">${r["3連対率"]}</td>
+                  <td class="border px-1">${r.コメント ?? ''}</td>
                   ${target.race_day >= 2
                     ? `<td class="border px-1 text-xs text-gray-700">
-                        ${loadPastEvaluations(target, race.race_num, r.選手名)}
+                        ${loadPastComment(target, r.選手名)}
                       </td>`
                     : ''
                   }
-                  <td class="border px-1">${r.コメント ?? ''}</td>
                 </tr>
               `).join('')}
             </tbody>

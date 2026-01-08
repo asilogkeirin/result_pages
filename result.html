@@ -147,21 +147,53 @@
     // ================================
     // 評価保存・取得（localStorage）
     // ================================
-    function storageKey(day, raceNum, racerName) {
-      // race_id + race_day + race_num + 選手名で一意にする
-      return `eval:${day.race_id}:${day.race_day}:${raceNum}:${racerName}`;
+    function storageKey(day, racerName) {
+      return `eval:${day.race_id}:${racerName}`;
     }
 
-    function saveEvaluation(day, raceNum, racerName, value, comment) {
-      const key = storageKey(day, raceNum, racerName);
-      localStorage.setItem(key, JSON.stringify({ value, comment }));
-    }
+    function saveEvaluation(day, racerName, value, comment) {
+      const key = storageKey(day, racerName);
+      const idx = day.race_day - 1;
 
-    function loadEvaluation(day, raceNum, racerName) {
-      const key = storageKey(day, raceNum, racerName);
+      let data = {
+        value: '',
+        comments: []
+      };
+
       const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : { value: '', comment: '' };
+      if (raw) {
+        data = JSON.parse(raw);
+        data.comments ||= [];
+      }
+
+      data.value = value;
+      data.comments[idx] = comment;
+
+      localStorage.setItem(key, JSON.stringify(data));
     }
+
+    function loadEvaluation(day, racerName) {
+      const key = storageKey(day, racerName);
+      const raw = localStorage.getItem(key);
+
+      if (!raw) {
+        return { value: '', comment: '' };
+      }
+
+      const data = JSON.parse(raw);
+      const idx = day.race_day - 1;
+
+      return {
+        value: data.value || '',
+        comment: data.comments?.[idx] || ''
+      };
+    }
+
+    function autoResizeTextarea(el) {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+
 
     // ================================
     // レース表示
@@ -177,7 +209,11 @@
 
       raceDetail.innerHTML = `
         <h2 class="text-xl font-semibold mb-2">${race.race_num}R：${race.race_name}</h2>
-
+        ${race.lines ? `
+          <span class="text-sm text-gray-500">
+            並び：${race.lines}
+          </span>
+        ` : ''}
         ${race.video_url ? `
           <video src="${race.video_url}" controls class="w-full max-w-2xl mb-4"></video>
         ` : ''}
@@ -231,7 +267,11 @@
                   </select>
                 </td>
                 <td class="border">
-                  <input type="text" class="w-full border rounded px-1 text-sm eval-comment" data-racer="${r['選手名']}" data-race="${race.race_num}" value="${ev.comment}" />
+                  <textarea
+                    class="w-full border rounded px-1 text-sm eval-comment resize-none overflow-hidden"
+                    rows="1"
+                    data-racer="${r['選手名']}"
+                  >${ev.comment}</textarea>
                 </td>
               </tr>`;
             }).join('')}
@@ -243,11 +283,18 @@
       raceDetail.querySelectorAll('.eval-select, .eval-comment').forEach(el => {
         el.addEventListener('change', () => {
           const racer = el.dataset.racer;
-          const raceNum = el.dataset.race;
           const row = el.closest('tr');
           const value = row.querySelector('.eval-select').value;
           const comment = row.querySelector('.eval-comment').value;
-          saveEvaluation(day, raceNum, racer, value, comment);
+          saveEvaluation(day, racer, value, comment);
+        });
+      });
+
+      raceDetail.querySelectorAll('.eval-comment').forEach(el => {
+        autoResizeTextarea(el);
+
+        el.addEventListener('input', () => {
+          autoResizeTextarea(el);
         });
       });
     }
@@ -334,7 +381,7 @@
               </thead>
               <tbody>
                 ${race.racers.map(r => {
-                  const ev = loadEvaluation(day, race.race_num, r['選手名']);
+                  const ev = loadEvaluation(day, r['選手名']);;
                   return `
                     <tr class="text-center">
                       <td class="border">${r['着']}</td>
@@ -350,6 +397,7 @@
                           data-racer="${r['選手名']}"
                           data-race="${race.race_num}">
                           <option value="">-</option>
+                          <option value="S" ${ev.value==='S'?'selected':''}>S</option>
                           <option value="A" ${ev.value==='A'?'selected':''}>A</option>
                           <option value="B+" ${ev.value==='B+'?'selected':''}>B+</option>
                           <option value="B" ${ev.value==='B'?'selected':''}>B</option>
@@ -359,11 +407,11 @@
                         </select>
                       </td>
                       <td class="border">
-                        <input type="text"
-                          class="w-full border rounded px-1 text-sm eval-comment"
+                        <textarea
+                          class="w-full border rounded px-1 text-sm eval-comment resize-none overflow-hidden"
+                          rows="1"
                           data-racer="${r['選手名']}"
-                          data-race="${race.race_num}"
-                          value="${ev.comment}" />
+                        >${ev.comment}</textarea>
                       </td>
                     </tr>
                   `;
@@ -374,15 +422,22 @@
         `).join('')}
       `;
 
-      // 評価保存イベント（既存ロジックと同じ）
+     // 保存イベント
       raceDetail.querySelectorAll('.eval-select, .eval-comment').forEach(el => {
         el.addEventListener('change', () => {
           const racer = el.dataset.racer;
-          const raceNum = el.dataset.race;
           const row = el.closest('tr');
           const value = row.querySelector('.eval-select').value;
           const comment = row.querySelector('.eval-comment').value;
-          saveEvaluation(day, raceNum, racer, value, comment);
+          saveEvaluation(day, racer, value, comment);
+        });
+      });
+
+      raceDetail.querySelectorAll('.eval-comment').forEach(el => {
+        autoResizeTextarea(el);
+
+        el.addEventListener('input', () => {
+          autoResizeTextarea(el);
         });
       });
 
@@ -393,6 +448,12 @@
         copyBtn.textContent = 'コピーしました';
         setTimeout(() => (copyBtn.textContent = '表をコピー'), 1500);
       };
+    }
+    function sanitizeForTSV(text) {
+      if (!text) return '';
+      return text
+        .replace(/\r?\n/g, ' ')
+        .replace(/\t/g, ' ');
     }
 
     function buildAllRacesTSV(day) {
@@ -417,7 +478,7 @@
 
       day.races.forEach(race => {
         race.racers.forEach(r => {
-          const ev = loadEvaluation(day, race.race_num, r['選手名']);
+          const ev = loadEvaluation(day, r['選手名']);
 
           lines.push([
             day.place,
@@ -433,9 +494,12 @@
             r['SB'],
             r['着差'],
             ev.value,
-            ev.comment
+            sanitizeForTSV(ev.comment)
           ].join('\t'));
         });
+        if (raceIdx < day.races.length - 1) {
+          lines.push('');
+        }
       });
 
       return lines.join('\n');
