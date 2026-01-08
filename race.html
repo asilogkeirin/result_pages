@@ -132,8 +132,8 @@
     // 前日コメント取得（単数）
     // ================================
     function loadPastComment(day, racerName) {
-      const prevDay = day.race_day - 1;
-      if (prevDay < 1) return '';
+      if (day.race_day <= 1) return '';
+      const prevIndex = day.race_day - 2;
 
       const key = `eval:${day.race_id}:${racerName}`;
       const raw = localStorage.getItem(key);
@@ -141,7 +141,7 @@
 
       try {
         const data = JSON.parse(raw);
-        return data.comments?.[prevDay] ?? '';
+        return data.comments?.[prevIndex] ?? '';
       } catch {
         return '';
       }
