@@ -236,7 +236,7 @@
           </thead>
           <tbody>
             ${race.racers.map(r => {
-              const ev = loadEvaluation(day, race.race_num, r['選手名']);
+              const ev = loadEvaluation(day, r['選手名']);
               return `
               <tr class="text-center">
                 <td class="border">${r['着']}</td>
