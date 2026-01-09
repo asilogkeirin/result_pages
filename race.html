@@ -188,6 +188,11 @@
                 <th class="border px-1">勝率</th>
                 <th class="border px-1">2連<br>対率</th>
                 <th class="border px-1">3連<br>対率</th>
+                ${target.race_day >= 2
+                  ? `<th class="border px-1">前日<br>順位</th>
+                  <th class="border px-1">前日<br>上り</th>`
+                  : ''
+                }
                 <th class="border px-1">コメント</th>
                 ${target.race_day >= 2
                   ? `<th class="border px-1">脚ログ</th>`
@@ -222,6 +227,16 @@
                   <td class="border px-1 text-right">${r.勝率}</td>
                   <td class="border px-1 text-right">${r["2連対率"]}</td>
                   <td class="border px-1 text-right">${r["3連対率"]}</td>
+                  ${target.race_day >= 2
+                    ? `<td class="border px-1 text-xs text-gray-700">
+                        ${r.前日着 ?? ''}
+                      </td>
+                      <td class="border px-1 text-xs text-gray-700">
+                        ${r.前日上り ?? ''}
+                      </td>
+                      `
+                    : ''
+                  }
                   <td class="border px-1">${r.コメント ?? ''}</td>
                   ${target.race_day >= 2
                     ? `<td class="border px-1 text-xs text-gray-700">
