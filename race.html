@@ -211,7 +211,7 @@
                     </div>
                   </td>
                   ${target.race_day >= 2
-                    ? `<td class="border px-1 text-xs text-gray-700">
+                    ? `<td class="border px-1 text-center">
                         ${loadPastEvaluation(target, r.選手名)}
                       </td>`
                     : ''
@@ -228,10 +228,10 @@
                   <td class="border px-1 text-right">${r["2連対率"]}</td>
                   <td class="border px-1 text-right">${r["3連対率"]}</td>
                   ${target.race_day >= 2
-                    ? `<td class="border px-1 text-xs text-gray-700">
+                    ? `<td class="border px-1">
                         ${r.前日着 ?? ''}
                       </td>
-                      <td class="border px-1 text-xs text-gray-700">
+                      <td class="border px-1">
                         ${r.前日上り ?? ''}
                       </td>
                       `
